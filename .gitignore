@@ -1,0 +1,18 @@
+bin/
+obj/
+.vs/
+.idea/
+.vscode/
+publish/
+.publish/
+artifacts/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.log
+.DS_Store
+
+# Local agent state and secrets
+settings.json
+agent.env
