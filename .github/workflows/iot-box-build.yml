@@ -1,0 +1,50 @@
+name: Build POS Print Agent
+
+on:
+  push:
+    paths:
+      - "**"
+  pull_request:
+    paths:
+      - "**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore PosPrintAgent.sln
+      - run: dotnet build PosPrintAgent.sln --configuration Release --no-restore
+
+  windows-publish:
+    name: Publish Windows payload
+    runs-on: windows-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet publish src/PosPrintAgent/PosPrintAgent.csproj --configuration Release --runtime win-x64 --self-contained true --output publish/win-x64
+      - shell: pwsh
+        run: |
+          Copy-Item install-windows.ps1 publish/win-x64/install-windows.ps1
+          Copy-Item uninstall-windows.ps1 publish/win-x64/uninstall-windows.ps1
+          Copy-Item README.md publish/win-x64/README.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pos-print-agent-win-x64
+          path: publish/win-x64
+          if-no-files-found: error
