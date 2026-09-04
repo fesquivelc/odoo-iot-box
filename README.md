@@ -11,9 +11,13 @@ dotnet run --project src/PosPrintAgent
 ```
 
 Open `http://127.0.0.1:18181`. The first run creates a local API token, which
-is persisted in the operating system application-data directory. The current
-MVP supports ESC/POS over TCP (port 9100); printer adapters for CUPS
-and the Windows spooler can be added without changing the API.
+is persisted in the operating system application-data directory. The agent
+supports ESC/POS over TCP (port 9100), Windows RAW spooler queues, and CUPS
+queues on Linux/macOS.
+
+Use **Buscar impresoras conectadas** to discover queues registered by the
+operating system. Selecting a discovered queue registers it without requiring
+the printer name to be typed manually.
 
 The agent deliberately binds to loopback by default. Do not expose the port
 to the public internet.
