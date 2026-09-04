@@ -16,7 +16,18 @@ permissions:
 
 jobs:
   publish:
-    runs-on: windows-latest
+    name: Publish ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: macos-latest
+            rid: osx-arm64
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,16 +35,21 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-      - run: dotnet publish src/PosPrintAgent/PosPrintAgent.csproj --configuration Release --runtime win-x64 --self-contained true --output publish/win-x64
+      - run: dotnet publish src/PosPrintAgent/PosPrintAgent.csproj --configuration Release --runtime ${{ matrix.rid }} --self-contained true --output publish/${{ matrix.rid }}
+      - shell: pwsh
+        if: matrix.rid == 'win-x64'
+        run: |
+          Copy-Item install-windows.ps1 publish/${{ matrix.rid }}/install-windows.ps1
+          Copy-Item uninstall-windows.ps1 publish/${{ matrix.rid }}/uninstall-windows.ps1
       - shell: pwsh
         run: |
-          Copy-Item install-windows.ps1 publish/win-x64/install-windows.ps1
-          Copy-Item uninstall-windows.ps1 publish/win-x64/uninstall-windows.ps1
-          Copy-Item README.md publish/win-x64/README.md
+          Copy-Item README.md publish/${{ matrix.rid }}/README.md
+          Compress-Archive -Path publish/${{ matrix.rid }}/* -DestinationPath pos-print-agent-${{ matrix.rid }}.zip -Force
       - uses: actions/upload-artifact@v4
         with:
-          name: pos-print-agent-release
-          path: publish/win-x64
+          name: pos-print-agent-${{ matrix.rid }}
+          path: pos-print-agent-${{ matrix.rid }}.zip
+          if-no-files-found: error
 
   release:
     runs-on: ubuntu-latest
@@ -41,10 +57,11 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: pos-print-agent-release
+          pattern: pos-print-agent-*
           path: release-payload
+          merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           generate_release_notes: true
-          files: release-payload/**
+          files: release-payload/*.zip

@@ -33,3 +33,13 @@ The configuration page is served by ASP.NET Core static files at
 `http://127.0.0.1:18181`. It is vanilla JavaScript, not Razor: this keeps the
 configuration UI independent of server-side rendering while remaining part of
 the same executable. To remove the service, run `.\uninstall-windows.ps1`.
+
+## GitHub artifacts
+
+The GitHub Actions workflows create one self-contained ZIP per runtime:
+
+- `pos-print-agent-win-x64.zip`
+- `pos-print-agent-linux-x64.zip`
+- `pos-print-agent-osx-arm64.zip`
+
+The release workflow attaches all three ZIP files to tags matching `v*`.
