@@ -174,6 +174,8 @@ public static class TcpPrinter
             using var client = new TcpClient();
             await client.ConnectAsync(job.Printer.Host, job.Printer.Port);
             await client.GetStream().WriteAsync(payload);
+            await client.GetStream().FlushAsync();
+            await Task.Delay(500);
             return new(job.JobId, true, "Impresión enviada.");
         }
         catch (Exception ex) { return new(job.JobId, false, ex.Message); }
@@ -260,7 +262,9 @@ public static class RasterEscPos
                 if (luminance < 160) output[imageStart + y * rowBytes + x / 8] |= (byte)(0x80 >> (x % 8));
             }
         }
-        output.AddRange(new byte[] { 0x0a, 0x0a, 0x1d, 0x56, 0x00 });
+        // Leave enough physical margin for printers whose cutter is offset
+        // from the print head, especially for the final POS signature.
+        output.AddRange(new byte[] { 0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x1d, 0x56, 0x00 });
         return output.ToArray();
     }
 }
