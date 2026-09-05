@@ -243,18 +243,21 @@ public static class RasterEscPos
         var height = Math.Max(1, (int)Math.Round(image.Height * (double)width / image.Width));
         image.Mutate(ctx => ctx.Resize(width, height));
         var rowBytes = (width + 7) / 8;
-        var output = new List<byte>(height * rowBytes + 16) { 0x1b, 0x40 };
+        var output = new List<byte>(height * rowBytes + 16)
+        {
+            0x1b, 0x40, 0x1d, 0x76, 0x30, 0x00,
+            (byte)(rowBytes & 0xff), (byte)(rowBytes >> 8),
+            (byte)(height & 0xff), (byte)(height >> 8),
+        };
+        var imageStart = output.Count;
+        output.AddRange(new byte[height * rowBytes]);
         for (var y = 0; y < height; y++)
         {
-            output.AddRange(new byte[] { 0x1d, 0x76, 0x30, 0x00,
-                (byte)(rowBytes & 0xff), (byte)(rowBytes >> 8), 1, 0 });
-            var rowStart = output.Count;
-            output.AddRange(new byte[rowBytes]);
             for (var x = 0; x < width; x++)
             {
                 var pixel = image[x, y];
                 var luminance = (pixel.R * 299 + pixel.G * 587 + pixel.B * 114) / 1000;
-                if (luminance < 160) output[rowStart + x / 8] |= (byte)(0x80 >> (x % 8));
+                if (luminance < 160) output[imageStart + y * rowBytes + x / 8] |= (byte)(0x80 >> (x % 8));
             }
         }
         output.AddRange(new byte[] { 0x0a, 0x0a, 0x1d, 0x56, 0x00 });
